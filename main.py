@@ -31,11 +31,13 @@ class Mazer:
 
         self.start_touch = False
 
+        self.color = (0, 0, 255)
+
     def move(self):
         # ↓1
         if self.dir == 1:
             # 如果前方是红色的，可能是遇到死角掉头了，继续向前
-            if (self.get_color((self.pos[0], self.pos[1] + 1)) == (0, 0, 255)).all():
+            if (self.get_color((self.pos[0], self.pos[1] + 1)) == self.color).all():
                 self.pos[1] = self.pos[1] + 1
             elif self.pos[1] == self.height - 1:
                 # 遇到边界右转
@@ -48,7 +50,7 @@ class Mazer:
         # ←2
         elif self.dir == 2:
             # 如果前方是红色的，可能是遇到死角掉头了，继续向前
-            if (self.get_color((self.pos[0] - 1, self.pos[1])) == (0, 0, 255)).all():
+            if (self.get_color((self.pos[0] - 1, self.pos[1])) == self.color).all():
                 self.pos[0] = self.pos[0] - 1
             elif self.pos[0] == 0:
                 self.turn_right()
@@ -60,7 +62,7 @@ class Mazer:
         # ↑3
         elif self.dir == 3:
             # 如果前方是红色的，可能是遇到死角掉头了，继续向前
-            if (self.get_color((self.pos[0], self.pos[1] - 1)) == (0, 0, 255)).all():
+            if (self.get_color((self.pos[0], self.pos[1] - 1)) == self.color).all():
                 self.pos[1] = self.pos[1] - 1
             elif self.pos[1] == 0:
                 self.turn_right()
@@ -72,7 +74,7 @@ class Mazer:
         # →4
         elif self.dir == 4:
             # 如果前方是红色的，可能是遇到死角掉头了，继续向前
-            if (self.get_color((self.pos[0] + 1, self.pos[1])) == (0, 0, 255)).all():
+            if (self.get_color((self.pos[0] + 1, self.pos[1])) == self.color).all():
                 self.pos[0] = self.pos[0] + 1
             elif self.pos[0] >= self.width - 1:
                 self.turn_right()
@@ -82,12 +84,13 @@ class Mazer:
             else:
                 self.pos[0] = self.pos[0] + 1
 
-    def run(self):
+    def run(self, color=(0, 0, 255)):
+        self.color = color
         step = 1
         while True:
-            logging.debug("%s %s %s", step,  self.pos, self.dir)
+            logging.debug("%s %s %s", step, self.pos, self.dir)
             # 把当前位置涂红
-            self.org_img[self.pos[1], self.pos[0]] = [0, 0, 255]
+            self.org_img[self.pos[1], self.pos[0]] = self.color
             if self.check_empty_left():
                 # 一开始左侧为空，但是还没碰到迷宫的墙
                 if self.start_touch:
@@ -97,21 +100,23 @@ class Mazer:
                     if not self.check_pos_empty((self.pos[0] + 1, self.pos[1])):
                         self.start_touch = True
             self.move()
-            self.org_img[self.pos[1], self.pos[0]] = [0, 0, 255]
+            self.org_img[self.pos[1], self.pos[0]] = self.color
             if self.check_flag_left():
                 if self.check_white_left2():
                     self.turn_left()
                 else:
                     # self.show()
-                    split_name = os.path.splitext(self.file_name)
-                    # black_mask = (self.org_img[:, :, 0] == 0) & (self.org_img[:, :, 1] == 0) & (self.org_img[:, :, 2] == 0)
-                    # self.org_img[black_mask] = (255, 255, 255)
-                    cv2.imwrite(split_name[0] + "-r.jpg", self.org_img)
                     break
 
             step = step + 1
             # if step % 10000 == 0:
             #     self.show()
+
+    def write_file(self):
+        split_name = os.path.splitext(self.file_name)
+        # black_mask = (self.org_img[:, :, 0] == 0) & (self.org_img[:, :, 1] == 0) & (self.org_img[:, :, 2] == 0)
+        # self.org_img[black_mask] = (255, 255, 255)
+        cv2.imwrite(split_name[0] + "-r.jpg", self.org_img)
 
     def show(self):
         img = self.org_img.copy()
@@ -126,23 +131,23 @@ class Mazer:
     def check_flag_left(self):
         # ↓1
         if self.dir == 1:
-            v = self.org_img[self.pos[1], self.pos[0]+1]
-            if v[0] == 0 and v[1] == 0 and v[2] == 255:
+            v = self.org_img[self.pos[1], self.pos[0] + 1]
+            if v[0] == self.color[0] and v[1] == self.color[1] and v[2] == self.color[2]:
                 return True
         # ←2
         elif self.dir == 2:
-            v = self.org_img[self.pos[1]+1, self.pos[0]]
-            if v[0] == 0 and v[1] == 0 and v[2] == 255:
+            v = self.org_img[self.pos[1] + 1, self.pos[0]]
+            if v[0] == self.color[0] and v[1] == self.color[1] and v[2] == self.color[2]:
                 return True
         # ↑3
         elif self.dir == 3:
-            v = self.org_img[self.pos[1], self.pos[0]-1]
-            if v[0] == 0 and v[1] == 0 and v[2] == 255:
+            v = self.org_img[self.pos[1], self.pos[0] - 1]
+            if v[0] == self.color[0] and v[1] == self.color[1] and v[2] == self.color[2]:
                 return True
         # →4
         elif self.dir == 4:
-            v = self.org_img[self.pos[1]-1, self.pos[0]]
-            if v[0] == 0 and v[1] == 0 and v[2] == 255:
+            v = self.org_img[self.pos[1] - 1, self.pos[0]]
+            if v[0] == self.color[0] and v[1] == self.color[1] and v[2] == self.color[2]:
                 return True
 
         return False
@@ -151,22 +156,22 @@ class Mazer:
     def check_white_left2(self):
         # ↓1
         if self.dir == 1:
-            v = self.org_img[self.pos[1], self.pos[0]+2]
+            v = self.org_img[self.pos[1], self.pos[0] + 2]
             if v[0] == 255 and v[1] == 255 and v[2] == 255:
                 return True
         # ←2
         elif self.dir == 2:
-            v = self.org_img[self.pos[1]+2, self.pos[0]]
+            v = self.org_img[self.pos[1] + 2, self.pos[0]]
             if v[0] == 255 and v[1] == 255 and v[2] == 255:
                 return True
         # ↑3
         elif self.dir == 3:
-            v = self.org_img[self.pos[1], self.pos[0]-2]
+            v = self.org_img[self.pos[1], self.pos[0] - 2]
             if v[0] == 255 and v[1] == 255 and v[2] == 255:
                 return True
         # →4
         elif self.dir == 4:
-            v = self.org_img[self.pos[1]-2, self.pos[0]]
+            v = self.org_img[self.pos[1] - 2, self.pos[0]]
             if v[0] == 255 and v[1] == 255 and v[2] == 255:
                 return True
 
@@ -216,11 +221,21 @@ class Mazer:
     def get_color(self, pos):
         return self.org_img[pos[1], pos[0]]
 
+    def mirror(self):
+        self.dir = 4
+        self.start_touch = False
+        self.pos = [0, (int)(self.height / 2)]
+        self.org_img = cv2.flip(self.org_img, 1)
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         mazer = Mazer(sys.argv[1])
-        mazer.run()
+        mazer.run(color=(0, 0, 255))
+        mazer.mirror()
+        mazer.run(color=(0, 255, 0))
+        mazer.mirror()
+        mazer.write_file()
     else:
         dir = "resource"
         for root, dirs, files in os.walk(dir):
@@ -229,4 +244,8 @@ if __name__ == "__main__":
                     continue
                 logging.debug(file)
                 mazer = Mazer(dir + "/" + file)
-                mazer.run()
+                mazer.run(color=(0, 0, 255))
+                mazer.mirror()
+                mazer.run(color=(0, 255, 0))
+                mazer.mirror()
+                mazer.write_file()
